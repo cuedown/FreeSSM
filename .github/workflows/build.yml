@@ -8,7 +8,7 @@ on:
 jobs:
   macos:
     name: macOS (Apple Silicon)
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt
@@ -80,7 +80,7 @@ jobs:
           $env:PATH = "$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
           New-Item -ItemType Directory -Force dist\FreeSSM | Out-Null
           lrelease FreeSSM_en.ts FreeSSM_de.ts FreeSSM_tr.ts
-          Copy-Item release\FreeSSM.exe, FreeSSM_*.qm, LiberationSans-*.ttf, background.png, README.txt, LICENSE.txt dist\FreeSSM\
+          Copy-Item FreeSSM.exe, FreeSSM_*.qm, LiberationSans-*.ttf, background.png, README.txt, LICENSE.txt dist\FreeSSM\
           Copy-Item -Recurse definitions, doc dist\FreeSSM\
           windeployqt --release dist\FreeSSM\FreeSSM.exe
           Compress-Archive -Path dist\FreeSSM -DestinationPath FreeSSM-windows-x64.zip
