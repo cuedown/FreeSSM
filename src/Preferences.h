@@ -24,8 +24,12 @@
 
 #ifdef __WIN32__
 	#include "windows\serialCOM.h"
-#elif defined __linux__
-	#include "linux/serialCOM.h"
+#elif defined __linux__ || defined __APPLE__
+	#ifdef __APPLE__
+		#include "macos/serialCOM.h"
+	#else
+		#include "linux/serialCOM.h"
+	#endif
 #else
 	#error "Operating system not supported !"
 #endif

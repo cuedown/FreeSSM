@@ -264,10 +264,17 @@ unix {
        HEADERS += src/linux/serialCOM.h \
                   src/linux/TimeM.h \
                   src/linux/J2534_API.h
-       SOURCES += src/linux/serialCOM.cpp \
-                  src/linux/TimeM.cpp \
+       SOURCES += src/linux/TimeM.cpp \
                   src/linux/J2534_API.cpp
-       LIBS += -ldl -lrt
+       macx {
+              HEADERS -= src/linux/serialCOM.h
+              HEADERS += src/macos/serialCOM.h
+              SOURCES += src/macos/serialCOM.cpp
+              LIBS += -ldl -framework IOKit
+       } else {
+              SOURCES += src/linux/serialCOM.cpp
+              LIBS += -ldl -lrt
+       }
 }
 
 win32 {

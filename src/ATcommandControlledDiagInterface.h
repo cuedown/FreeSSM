@@ -31,9 +31,13 @@
 	#include "windows\serialCOM.h"
 	#include "windows\TimeM.h"
 	#define waitms(x) Sleep(x)
-#elif defined __linux__
+#elif defined __linux__ || defined __APPLE__
 	#include <unistd.h>
-	#include "linux/serialCOM.h"
+	#ifdef __APPLE__
+		#include "macos/serialCOM.h"
+	#else
+		#include "linux/serialCOM.h"
+	#endif
 	#include "linux/TimeM.h"
 	#define waitms(x) usleep(1000*x)
 #else
