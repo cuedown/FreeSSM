@@ -112,10 +112,14 @@ private:
 	std::vector<unsigned int> _tableRowPosIndexes; /* index of the row at which the MB/SW is displayed in the values-table-widget */
 	bool _MBSWreading;
 
-	// pointer to csv file object
+	// pointer to csv file object (nullptr if logging is not active)
 	csvfile *csv = nullptr;
-	// measurement start time (default ot current time)
-	std::chrono::high_resolution_clock::time_point startTime;
+	// measurement start time
+	std::chrono::steady_clock::time_point startTime;
+
+	QString csvLogFilename();
+	void openCsvLog();
+	void closeCsvLog();
 
 	void setupTimeModeUiElements();
 	bool validateMBSWselection(const std::vector<MBSWmetadata_dt>& MBSWmetaList);

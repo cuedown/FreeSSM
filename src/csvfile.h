@@ -38,8 +38,13 @@ public:
 
     ~csvfile()
     {
-        flush();
-        fs_.close();
+        // never throw from the destructor (e.g. disk full or drive removed)
+        try
+        {
+            flush();
+            fs_.close();
+        }
+        catch (...) { }
     }
 
     void flush()

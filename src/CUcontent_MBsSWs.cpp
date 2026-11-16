@@ -18,6 +18,9 @@
  */
 
 #include "CUcontent_MBsSWs.h"
+#if QT_VERSION >= 0x050000
+	#include <QStandardPaths>
+#endif
 
 
 
@@ -73,6 +76,7 @@ CUcontent_MBsSWs::CUcontent_MBsSWs(MBSWsettings_dt settings, QWidget *parent) : 
 
 CUcontent_MBsSWs::~CUcontent_MBsSWs()
 {
+	closeCsvLog();
 	if (_SSMPdev)
 	{
 		_SSMPdev->stopMBSWreading();
@@ -371,45 +375,8 @@ bool CUcontent_MBsSWs::startMBSWreading()
 	else
 		goto err;
 
-	// store start time
-	startTime = std::chrono::high_resolution_clock::now();
-
-	// create csv object and write header
-	csv = new csvfile("measurements.csv");
-
-	// global time
-	*csv << "Time";
-
-	// time since measurement
-	*csv << "Delta Time";
-
-	// write header
-	for (size_t i=0; i < _MBSWmetaList.size(); i++)
-	{
-		const MBSWmetadata_dt& metadata = _MBSWmetaList.at(i);
-		
-		std::string title;
-		std::string unit;
-
-		// find title and units
-		if (metadata.blockType == BlockType::MB)
-		{
-			const mb_dt& mb = _supportedMBs.at(metadata.nativeIndex);
-			title = mb.title.toStdString();
-			unit = mb.unit.toStdString();
-		}
-		else if (metadata.blockType == BlockType::SW)
-		{
-			const sw_dt& sw = _supportedSWs.at(metadata.nativeIndex);
-			title = sw.title.toStdString();
-			unit = sw.unit.toStdString();
-		}
-
-		// write to file
-		*csv << title + " (" + unit + ")";
-
-	}
-	*csv << endrow;
+	// log the measurements to a CSV file in the user's documents folder
+	openCsvLog();
 
 	// Reset old data:
 	_lastValues.clear();
@@ -459,8 +426,8 @@ bool CUcontent_MBsSWs::stopMBSWreading()
 		}
 	}
 	disconnect( _SSMPdev, SIGNAL( newMBSWrawValues(const std::vector<unsigned int>&, int) ), this, SLOT( processMBSWRawValues(const std::vector<unsigned int>&, int) ) );
-	// close csv files (also flushes csv)
-	delete csv;
+	// close csv file (also flushes it)
+	closeCsvLog();
 	// Set text+icon of start/stop-button:
 	labelStartStopButtonReadyForStart();
 	// Enable delete button if MBs/SWs are selected on the table:
@@ -770,26 +737,28 @@ void CUcontent_MBsSWs::processMBSWRawValues(const std::vector<unsigned int>& raw
 	updateTimeInfo(refreshduration_ms);
 
 	// write to csv
-	
-	// get timestamp	
-	const auto currTime = std::chrono::high_resolution_clock::now();
-	const std::chrono::duration<double> deltaTime = currTime - startTime;
-
-	// conver to unix epoch time in ms
-	const double unixEpochMs = std::chrono::duration_cast<std::chrono::milliseconds>
-		(currTime.time_since_epoch()).count() / 1000.0;
-	const double deltaEpochMs = std::chrono::duration_cast<std::chrono::milliseconds>
-		(deltaTime).count() / 1000.0;
-
-	// save to csv	
-	*csv << std::fixed << unixEpochMs;
-	*csv << deltaEpochMs;
-	for (size_t i=0; i < valueStrList.size(); i++) {
-		std::string value = valueStrList.at(i).toStdString();
-		*csv << value;
+	if (csv)
+	{
+		try
+		{
+			// wall clock time (unix epoch) and time since the start, both in seconds
+			const double unixTime_s = std::chrono::duration_cast<std::chrono::milliseconds>
+				(std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+			const double deltaTime_s = std::chrono::duration_cast<std::chrono::milliseconds>
+				(std::chrono::steady_clock::now() - startTime).count() / 1000.0;
+			*csv << std::fixed << unixTime_s;
+			*csv << deltaTime_s;
+			for (size_t i=0; i < valueStrList.size(); i++)
+				*csv << valueStrList.at(i).toStdString();
+			*csv << endrow;
+			csv->flush();
+		}
+		catch (const std::exception&)
+		{
+			// writing failed (disk full, drive removed, ...): stop logging, keep measuring
+			closeCsvLog();
+		}
 	}
-	*csv << endrow;
-	csv->flush();
 }
 
 
@@ -1308,3 +1277,68 @@ void CUcontent_MBsSWs::errorMsg(QString title, QString message)
 	msg.exec();
 	msg.close();
 }
+
+
+QString CUcontent_MBsSWs::csvLogFilename()
+{
+#if QT_VERSION >= 0x050000
+	QString dirpath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+#else
+	QString dirpath = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
+#endif
+	if (dirpath.isEmpty())
+		dirpath = QDir::homePath();
+	dirpath += "/FreeSSM";
+	if (!QDir().mkpath(dirpath))
+		return QString();
+	return dirpath + "/measurements_" + QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss") + ".csv";
+}
+
+
+void CUcontent_MBsSWs::openCsvLog()
+{
+	closeCsvLog();
+	startTime = std::chrono::steady_clock::now();
+	const QString filename = csvLogFilename();
+	if (filename.isEmpty())
+		return;
+	// a logging problem must never stop or crash the measurements
+	try
+	{
+		csv = new csvfile(QFile::encodeName(filename).toStdString());
+		*csv << "Time";		// unix epoch, seconds
+		*csv << "Delta Time";	// seconds since start
+		for (size_t i=0; i < _MBSWmetaList.size(); i++)
+		{
+			const MBSWmetadata_dt& metadata = _MBSWmetaList.at(i);
+			QString title;
+			QString unit;
+			if (metadata.blockType == BlockType::MB)
+			{
+				const mb_dt& mb = _supportedMBs.at(metadata.nativeIndex);
+				title = mb.title;
+				unit = mb.unit;
+			}
+			else if (metadata.blockType == BlockType::SW)
+			{
+				const sw_dt& sw = _supportedSWs.at(metadata.nativeIndex);
+				title = sw.title;
+				unit = sw.unit;
+			}
+			*csv << (title + " (" + unit + ")").toStdString();
+		}
+		*csv << endrow;
+	}
+	catch (const std::exception&)
+	{
+		closeCsvLog();
+	}
+}
+
+
+void CUcontent_MBsSWs::closeCsvLog()
+{
+	delete csv;	// csvfile's destructor doesn't throw
+	csv = nullptr;
+}
+
