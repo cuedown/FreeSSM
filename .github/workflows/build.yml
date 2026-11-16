@@ -8,7 +8,7 @@ on:
 jobs:
   macos:
     name: macOS (Apple Silicon)
-    runs-on: macos-latest
+    runs-on: macos-15  # pinned: macos-latest kept sitting in the queue
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt
