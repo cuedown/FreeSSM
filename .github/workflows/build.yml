@@ -58,33 +58,53 @@ jobs:
           path: FreeSSM-linux-x86_64.tar.gz
 
   windows:
-    name: Windows (MinGW, 64-bit)
+    name: Windows (${{ matrix.label }})
     runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 32-bit: needed for J2534 interfaces that only ship a 32-bit DLL (e.g. Tactrix OpenPort 2.0)
+          - label: 32-bit
+            qt: '5.15.2'
+            arch: win32_mingw81
+            tools: 'tools_mingw,qt.tools.win32_mingw810'
+            mingw: mingw810_32
+            qmake: qmake
+            out: windows-x86
+          - label: 64-bit
+            qt: '6.8.3'
+            arch: win64_mingw
+            tools: 'tools_mingw1310'
+            mingw: mingw1310_64
+            qmake: qmake6
+            out: windows-x64
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt + MinGW
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.8.3'
-          arch: win64_mingw
-          tools: 'tools_mingw1310'
+          version: ${{ matrix.qt }}
+          arch: ${{ matrix.arch }}
+          tools: ${{ matrix.tools }}
       - name: Build
         shell: cmd
         run: |
-          set PATH=%IQTA_TOOLS%\mingw1310_64\bin;%PATH%
-          qmake6 CONFIG+=release
+          set PATH=%IQTA_TOOLS%\${{ matrix.mingw }}\bin;%PATH%
+          ${{ matrix.qmake }} CONFIG+=release
           mingw32-make -j4 release
+          g++ -O2 -std=c++11 -static -Isrc -Isrc\windows tools\j2534list\main.cpp src\windows\J2534_API.cpp src\J2534misc.cpp -o j2534list.exe
       - name: Package
         shell: pwsh
         run: |
-          $env:PATH = "$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
+          $env:PATH = "$env:IQTA_TOOLS\${{ matrix.mingw }}\bin;$env:PATH"
           New-Item -ItemType Directory -Force dist\FreeSSM | Out-Null
           lrelease FreeSSM_en.ts FreeSSM_de.ts FreeSSM_tr.ts
-          Copy-Item FreeSSM.exe, FreeSSM_*.qm, LiberationSans-*.ttf, background.png, README.txt, LICENSE.txt dist\FreeSSM\
+          Copy-Item FreeSSM.exe, j2534list.exe, FreeSSM_*.qm, LiberationSans-*.ttf, background.png, README.txt, LICENSE.txt dist\FreeSSM\
           Copy-Item -Recurse definitions, doc dist\FreeSSM\
           windeployqt --release dist\FreeSSM\FreeSSM.exe
-          Compress-Archive -Path dist\FreeSSM -DestinationPath FreeSSM-windows-x64.zip
+          Compress-Archive -Path dist\FreeSSM -DestinationPath FreeSSM-${{ matrix.out }}.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: FreeSSM-windows-x64
-          path: FreeSSM-windows-x64.zip
+          name: FreeSSM-${{ matrix.out }}
+          path: FreeSSM-${{ matrix.out }}.zip
