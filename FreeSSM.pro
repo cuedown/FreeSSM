@@ -53,6 +53,7 @@ HEADERS += src/FreeSSM.h \
            src/CUcontent_LocalIdentifiers.h \
            src/CUcontent_MBsSWs.h \
            src/CUcontent_MBsSWs_tableView.h \
+           src/CUcontent_MBsSWs_plotView.h \
            src/CUcontent_Adjustments.h \
            src/CUcontent_sysTests.h \
            src/DiagInterfaceStatusBar.h \
@@ -109,6 +110,7 @@ SOURCES += src/main.cpp \
            src/CUcontent_LocalIdentifiers.cpp \
            src/CUcontent_MBsSWs.cpp \
            src/CUcontent_MBsSWs_tableView.cpp \
+           src/CUcontent_MBsSWs_plotView.cpp \
            src/CUcontent_Adjustments.cpp \
            src/CUcontent_sysTests.cpp \
            src/DiagInterfaceStatusBar.cpp \
