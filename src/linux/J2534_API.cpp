@@ -237,6 +237,14 @@ std::vector<J2534Library> J2534_API::parseJ2534LibsXml(const std::string& libsDe
 				std::cout << "J2534LIB: attribute 'api' missing!\n";
 				goto error;
 			}
+			// relative library paths are relative to FreeSSM's data folder, not to the current working directory:
+			if (lib.path.at(0) != '/')
+			{
+				std::string relpath = lib.path;
+				if (relpath.compare(0, 2, "./") == 0)
+					relpath.erase(0, 2);
+				lib.path = fssmDataPath().toStdString() + "/" + relpath;
+			}
 			lib.api = J2534misc::parseApiVersion(api_str);
 			if (lib.api == J2534_API_version::undefined) {
 				std::cout << "J2534LIB: unknown 'api': \"" << api_str << "\", assuming \"" << J2534misc::apiVersionToStr(J2534_API_version::v0404) << "\"\n";
