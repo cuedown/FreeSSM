@@ -102,7 +102,18 @@ jobs:
           lrelease FreeSSM_en.ts FreeSSM_de.ts FreeSSM_tr.ts
           Copy-Item FreeSSM.exe, j2534list.exe, FreeSSM_*.qm, LiberationSans-*.ttf, background.png, README.txt, LICENSE.txt dist\FreeSSM\
           Copy-Item -Recurse definitions, doc dist\FreeSSM\
-          windeployqt --release dist\FreeSSM\FreeSSM.exe
+          if ("${{ matrix.qt }}".StartsWith("5.")) {
+            # Qt 5 windeployqt can't find the platform plugin on CI, so deploy by hand
+            $qtbin = "$env:QT_ROOT_DIR\bin"
+            $plug = "$env:QT_ROOT_DIR\plugins"
+            Copy-Item "$qtbin\Qt5Core.dll", "$qtbin\Qt5Gui.dll", "$qtbin\Qt5Widgets.dll", "$qtbin\Qt5PrintSupport.dll", "$qtbin\libgcc_s_dw2-1.dll", "$qtbin\libstdc++-6.dll", "$qtbin\libwinpthread-1.dll" dist\FreeSSM\
+            foreach ($d in "platforms", "styles", "printsupport", "imageformats") {
+              if (Test-Path "$plug\$d") { Copy-Item -Recurse "$plug\$d" "dist\FreeSSM\$d" }
+            }
+            Get-ChildItem -Recurse dist\FreeSSM -Filter *d.dll | Where-Object { Test-Path ($_.FullName -replace 'd\.dll$', '.dll') } | Remove-Item
+          } else {
+            windeployqt --release dist\FreeSSM\FreeSSM.exe
+          }
           Compress-Archive -Path dist\FreeSSM -DestinationPath FreeSSM-${{ matrix.out }}.zip
       - uses: actions/upload-artifact@v4
         with:
