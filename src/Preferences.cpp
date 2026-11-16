@@ -18,6 +18,7 @@
  */
 
 #include "Preferences.h"
+#include "DataPath.h"
 
 
 
@@ -155,7 +156,7 @@ void Preferences::switchLanguage(int langindex)
 	// SET UP NEW TRANSLATOR
 	QTranslator *translator_new = new QTranslator;
 	// LOAD LANGUAGE:
-	QString AppsPath( QCoreApplication::applicationDirPath() );
+	QString AppsPath( fssmDataPath() );
 	QString langcode = __supportedLocales.at(langindex).name().section('_', 0, 0);
 	if ( translator_new->load("FreeSSM_" + langcode + ".qm", AppsPath) )
 	{

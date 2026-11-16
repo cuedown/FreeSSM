@@ -63,6 +63,7 @@ HEADERS += src/FreeSSM.h \
            src/SSMCUdata.h \
            src/ClearMemoryDlg.h \
            src/libFSSM.h \
+           src/DataPath.h \
            src/tinyxml2/tinyxml2.h \
 
 SOURCES += src/main.cpp \

@@ -19,6 +19,7 @@
 
 #include "J2534_API.h"
 #include "tinyxml2/tinyxml2.h"
+#include "DataPath.h"
 
 
 
@@ -160,7 +161,7 @@ void J2534_API::assignJ2534fcns()
 std::vector<J2534Library> J2534_API::getAvailableJ2534Libs()
 {
 	// HACK
-	const std::string libsDefXmlFile = "./definitions/J2534libs.xml";
+	const std::string libsDefXmlFile = fssmDataPath().toStdString() + "/definitions/J2534libs.xml";
 
 	const std::vector<J2534Library> PTlibraries = parseJ2534LibsXml(libsDefXmlFile);
 

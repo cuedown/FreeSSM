@@ -22,6 +22,7 @@
 
 
 #include <QtGui>
+#include "DataPath.h"
 #include "FreeSSM.h"
 #include "CmdLine.h"
 
@@ -115,7 +116,7 @@ int main(int argc, char *argv[])
 	if (!fontfamilies.contains("Liberation Sans"))
 	{
 		// Load font "Liberation Sans" (no installation !)
-		QString AppsPath( QCoreApplication::applicationDirPath() );
+		QString AppsPath( fssmDataPath() );
 		QFontDatabase::addApplicationFont (AppsPath + "/LiberationSans-Regular.ttf");
 		QFontDatabase::addApplicationFont (AppsPath + "/LiberationSans-Bold.ttf");
 		QFontDatabase::addApplicationFont (AppsPath + "/LiberationSans-Italic.ttf");
