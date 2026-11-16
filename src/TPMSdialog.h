@@ -23,6 +23,8 @@
 
 #ifdef __WIN32__
 	#include "windows\serialCOM.h"
+#elif defined __APPLE__
+	#include "macos/serialCOM.h"
 #elif defined __linux__
 	#include "linux/serialCOM.h"
 #else

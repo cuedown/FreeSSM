@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cerrno>
 #include <ctime>
+#include <cstdlib>	// getenv
 #include <IOKit/serial/ioss.h>	// IOSSIOSPEED
 
 
@@ -51,6 +52,23 @@ std::vector<std::string> serialCOM::GetAvailablePorts()
 		portlist.push_back(std::string("/dev/") + ep->d_name);
 	}
 	closedir(dp);
+	// extra ports for testing, e.g. the pseudo-terminal of tools/fake_ecu.py:
+	// FREESSM_EXTRA_PORTS=/dev/ttys005:/dev/ttys006
+	const char *extra = getenv("FREESSM_EXTRA_PORTS");
+	if (extra != NULL)
+	{
+		std::string list(extra);
+		size_t start = 0;
+		while (start <= list.size())
+		{
+			size_t end = list.find(':', start);
+			if (end == std::string::npos)
+				end = list.size();
+			if (end > start)
+				portlist.push_back(list.substr(start, end - start));
+			start = end + 1;
+		}
+	}
 	return portlist;
 }
 
@@ -74,7 +92,12 @@ bool serialCOM::applySpeed(double baudrate)
 		return false;
 	// IOSSIOSPEED accepts any rate the driver supports (standard or not)
 	if (ioctl(fd, IOSSIOSPEED, &speed) == -1)
-		return false;
+	{
+		// not a real serial driver (e.g. a pseudo-terminal): fall back to plain termios
+		struct termios tio;
+		if ((tcgetattr(fd, &tio) == -1) || (cfsetspeed(&tio, speed) == -1) || (tcsetattr(fd, TCSANOW, &tio) == -1))
+			return false;
+	}
 	currentbaudrate = baudrate;
 	return true;
 }
