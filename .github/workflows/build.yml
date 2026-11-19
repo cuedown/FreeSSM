@@ -7,16 +7,25 @@ on:
 
 jobs:
   macos:
-    name: macOS (Apple Silicon)
-    runs-on: macos-15  # pinned: macos-latest kept sitting in the queue
+    name: macOS (universal)
+    # Intel pool: GitHub's arm64 Mac runners are capacity-constrained and keep
+    # dropping the job unrun. Qt from install-qt-action is universal, so this
+    # still builds a native arm64 + x86_64 app.
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v5
       - name: Install Qt
-        run: brew install qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          host: mac
+          target: desktop
+          arch: clang_64
       - name: Build
         run: |
-          qmake6 CONFIG+=release
+          qmake CONFIG+=release QMAKE_APPLE_DEVICE_ARCHS="x86_64 arm64"
           make -j"$(sysctl -n hw.ncpu)" release
+          lipo -info FreeSSM.app/Contents/MacOS/FreeSSM
       - name: Package
         run: |
           APP=FreeSSM.app
@@ -26,11 +35,11 @@ jobs:
           cp -R definitions doc "$RES/"
           cp FreeSSM_*.qm LiberationSans-*.ttf background.png "$RES/"
           macdeployqt "$APP"
-          ditto -c -k --keepParent "$APP" FreeSSM-macos-arm64.zip
+          ditto -c -k --keepParent "$APP" FreeSSM-macos-universal.zip
       - uses: actions/upload-artifact@v5
         with:
-          name: FreeSSM-macos-arm64
-          path: FreeSSM-macos-arm64.zip
+          name: FreeSSM-macos-universal
+          path: FreeSSM-macos-universal.zip
 
   linux:
     name: Linux (x86_64)
