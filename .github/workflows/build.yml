@@ -10,7 +10,7 @@ jobs:
     name: macOS (Apple Silicon)
     runs-on: macos-15  # pinned: macos-latest kept sitting in the queue
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Qt
         run: brew install qt
       - name: Build
@@ -27,7 +27,7 @@ jobs:
           cp FreeSSM_*.qm LiberationSans-*.ttf background.png "$RES/"
           macdeployqt "$APP"
           ditto -c -k --keepParent "$APP" FreeSSM-macos-arm64.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: FreeSSM-macos-arm64
           path: FreeSSM-macos-arm64.zip
@@ -36,7 +36,7 @@ jobs:
     name: Linux (x86_64)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Qt
         run: |
           sudo apt-get update
@@ -52,7 +52,7 @@ jobs:
           cp FreeSSM FreeSSM_*.qm LiberationSans-*.ttf background.png README.txt LICENSE.txt dist/FreeSSM/
           cp -R definitions doc dist/FreeSSM/
           tar -C dist -czf FreeSSM-linux-x86_64.tar.gz FreeSSM
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: FreeSSM-linux-x86_64
           path: FreeSSM-linux-x86_64.tar.gz
@@ -80,7 +80,7 @@ jobs:
             qmake: qmake6
             out: windows-x64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Qt + MinGW
         uses: jurplel/install-qt-action@v4
         with:
@@ -115,7 +115,7 @@ jobs:
             windeployqt --release dist\FreeSSM\FreeSSM.exe
           }
           Compress-Archive -Path dist\FreeSSM -DestinationPath FreeSSM-${{ matrix.out }}.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: FreeSSM-${{ matrix.out }}
           path: FreeSSM-${{ matrix.out }}.zip
